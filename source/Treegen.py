@@ -2,6 +2,11 @@ from .BLOCKS import *
 
 
 class Gen:
+    """
+
+    Здесь и происходит интерпритация входящих строк, создание дерева, и "парсинг" в формат который легко читает ALTRO
+
+    """
 
     def __init__(self, lexer):
 
@@ -17,6 +22,15 @@ class Gen:
         self.lexer = lexer
 
     def __add__(self, tags):
+        """
+
+        Сюда закидывается каждая обработанная лексером строка по отдельности
+
+        И сразу определяется является ли строка новым блоком
+
+
+        :param tags: Теги строки
+        """
 
         lexs = [i[1] for i in tags]
         level = lexs.count("TAB")
@@ -53,7 +67,19 @@ class Gen:
 
         self.get_element_from_block.append(tags)
 
+        return self
+
     def __call__(self):
+        """
+
+        Так как мой движок основан на читании label'ov в формате
+
+        {book_name: {label_name1: Label, label_name2: Label}}
+
+        первый уровень сохраняется иным способом чем другие блоки
+
+        :return: [{Словарь с дефолтными значениями}, Скрипт игры]
+        """
 
         print("GEN")
 
@@ -61,8 +87,7 @@ class Gen:
 
         for block in self.block:
 
-            if isinstance(block[0], list):
-                # print("new block")
+            if isinstance(block[0], list): # Если это блок, то елемент отправляется в обработчик блоков (все кроме блока label запрещены)
 
                 label_name = None
                 if block[0][0][0] == "label":
@@ -76,7 +101,7 @@ class Gen:
                 self.tree[label_name] = block()
 
 
-            else:
+            else: #Штатные строки, обычно тут только Assign'ы
                 print(block)
 
                 self.get_action(block)
@@ -87,7 +112,19 @@ class Gen:
 
     def interp(self, block, i=0, parrent=None, lastblock=None):
 
-        Block = self.get_block(i, block, parrent, lastblock)
+        """
+
+        Вот тут и происходит основная работа.
+
+
+        :param block: список элементов для обработки. Первый елемент является инициализирующим
+        :param i: насколько глубоко находится эта ветка
+        :param parrent: От какой ветка уноследовалась эта
+        :param lastblock: Какая ветка шла до этой в родительной
+        :return: Завершенную ветку
+        """
+
+        Block = self.get_block(i, block, parrent, lastblock) #Обработка типа блока, и его инициализация
         child = str(Block)
 
         lastblock = None
@@ -96,17 +133,17 @@ class Gen:
 
         for e in block:
 
-            if isinstance(e[0], list):
+            if isinstance(e[0], list): #В случае нового блока, запускается новая ветка
 
-                e = self.interp(e, 1, child, lastblock)
+                e = self.interp(e, i+1, child, lastblock) #запускает сама себя
 
-                b = e()
+                b = e() #результат блока ветки
 
                 if b:
                     Block + b
                     lastblock = e
 
-            else:
+            else: #Обычные строки кода, которые помещаются в текущий блок
                 print(e)
 
                 e = self.get_action(e)
@@ -117,6 +154,13 @@ class Gen:
         return Block
 
     def get_action(self, tags):
+
+        """
+        Функция обрабатывает строки
+
+        :param tags: строка
+        :return: В случае если строка означает создание нового обьекта функции - вовзращает обьект
+        """
 
         lexs = [i[1] for i in tags]
 
@@ -189,6 +233,16 @@ class Gen:
 
     def get_block(self, i, block, parrent, lastblock=None):
 
+        """
+        Обрабатывает тип блока
+
+        :param i: глубина блока
+        :param block: сам блок
+        :param parrent: родительский блок
+        :param lastblock: последний сестринский блок
+        :return: Если блок означает создание нового блока, инициализирует и возвращает его
+        """
+
         Block = block.pop(0)[:-1]
         print(Block)
 
@@ -225,6 +279,12 @@ class Gen:
     @property
     def get_element_from_block(self):
 
+        """
+        находит елемент по последнему рабочему пути
+
+        :return:
+        """
+
         element = self.block
 
         for p in self.treepath:
@@ -234,6 +294,13 @@ class Gen:
 
     def str(self, tags):
 
+        """
+        Обратить лексер вспять
+
+        :param tags: теги строки
+        :return: строка типа str
+        """
+
         txt = ""
 
         for tag in tags:
@@ -242,6 +309,13 @@ class Gen:
         return txt
 
     def PYTHON(self, EVAL):
+
+        """
+        Функция генерирует питоновский код, который позже будет обрабатываться одноименной функцией в движке
+
+        :param EVAL: теги строки
+        :return: питоновский код
+        """
 
         code = ''
         for c in EVAL:
@@ -262,6 +336,13 @@ class Gen:
 
     def value(self, ID):
 
+        """
+        достает значение по имени ID
+
+        :param ID: имя значения
+        :return: значение и его тип
+        """
+
         if ID in self.variables:
             value = self.variables[ID]
         elif ID in self.defaults:
@@ -272,6 +353,14 @@ class Gen:
         return value
 
     def undefind(self, tags, lexs):
+        """
+        Упрощение использовании функции self.value
+
+        когда нужно переписать значение для каждой строки
+
+        :param tags: список с строкой
+        :param lexs: список с тегами строки
+        """
         for i, element in enumerate(tags):
 
             if element[1] == "ID":

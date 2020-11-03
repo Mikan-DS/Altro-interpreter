@@ -7,7 +7,10 @@
 
 from .lexer import lex
 
-if __name__ == "__main__":
-
-    while True:
-        print(lex(input(">>>")))
+# if __name__ == "__main__":
+#
+#     while True:
+#         try:
+#             print(lex(input(">>>")))
+#         except Exception as e:
+#             print(e)

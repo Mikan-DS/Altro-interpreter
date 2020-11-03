@@ -4,6 +4,11 @@ from .tokens import token_exprs
 
 
 def lex(characters):
+    """Эта функция разбивает строку на теги, или же лексиомы. пр.
+
+    bg = "photo-199827634_457239018" => [("bg", "ID"), ("=", "ASSIGN"), ("photo-199827634_457239018", "STR")]
+
+    """
     pos = 0
     tokens = []
     while pos < len(characters):
